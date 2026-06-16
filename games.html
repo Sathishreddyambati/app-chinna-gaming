@@ -1,0 +1,46 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · Games</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"app\" data-testid=\"games-page\">
+    <div class=\"page-head\">
+      <a class=\"back-btn\" href=\"home.html\"><i class=\"fa-solid fa-arrow-left\"></i></a>
+      <h2>Games</h2>
+    </div>
+
+    <div class=\"game-grid\">
+      <div class=\"game-card coin\" onclick=\"location.href='coin-toss.html'\" data-testid=\"play-coin-toss\">
+        <h4>Coin Toss</h4><p>Heads or Tails — 1.95×</p>
+        <div class=\"game-icon\">🪙</div>
+        <span class=\"play-pill\">▶ Play</span>
+      </div>
+      <div class=\"game-card double\" onclick=\"location.href='double-coin-toss.html'\" data-testid=\"play-double-coin\">
+        <h4>Double Coin</h4><p>2 coins — 3.8×</p>
+        <div class=\"game-icon\">🎲</div>
+        <span class=\"play-pill\">▶ Play</span>
+      </div>
+    </div>
+
+    <div class=\"glass mt-16\">
+      <h3 class=\"mb-8\">More games coming soon</h3>
+      <p class=\"muted text-sm\">We're building more demo entertainment games for you. Stay tuned!</p>
+    </div>
+  </div>
+
+  <script type=\"module\">
+    import { requireAuth } from \"./firebase.js\";
+    import { bottomNav } from \"./script.js\";
+    bottomNav(\"games\");
+    requireAuth(()=>{});
+  </script>
+</body>
+</html>
+"
