@@ -1,0 +1,76 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · Settings</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"app\" data-testid=\"settings-page\">
+    <div class=\"page-head\">
+      <a class=\"back-btn\" href=\"profile.html\"><i class=\"fa-solid fa-arrow-left\"></i></a>
+      <h2>Settings</h2>
+    </div>
+
+    <div class=\"glass\">
+      <div class=\"setting-row\">
+        <div><b>Dark Mode</b><div class=\"text-xs muted\">Premium dark theme</div></div>
+        <label class=\"switch\"><input type=\"checkbox\" id=\"darkMode\" checked data-testid=\"toggle-dark\"/><span class=\"slider\"></span></label>
+      </div>
+      <div class=\"setting-row\">
+        <div><b>Notifications</b><div class=\"text-xs muted\">Game results & rewards</div></div>
+        <label class=\"switch\"><input type=\"checkbox\" id=\"notif\" checked data-testid=\"toggle-notif\"/><span class=\"slider\"></span></label>
+      </div>
+      <div class=\"setting-row\">
+        <div><b>Language</b><div class=\"text-xs muted\">Display language</div></div>
+        <select class=\"input\" style=\"width:auto; padding:8px 12px;\" id=\"lang\" data-testid=\"lang-select\">
+          <option>English</option><option>हिन्दी</option><option>తెలుగు</option><option>தமிழ்</option>
+        </select>
+      </div>
+      <a href=\"#\" class=\"setting-row\" data-testid=\"privacy-link\">
+        <div><b>Privacy Policy</b><div class=\"text-xs muted\">How we use your data</div></div>
+        <i class=\"fa-solid fa-chevron-right muted\"></i>
+      </a>
+      <a href=\"#\" class=\"setting-row\">
+        <div><b>Terms of Service</b><div class=\"text-xs muted\">Demo entertainment platform</div></div>
+        <i class=\"fa-solid fa-chevron-right muted\"></i>
+      </a>
+      <a href=\"admin.html\" class=\"setting-row\" data-testid=\"admin-link\">
+        <div><b>Admin Panel</b><div class=\"text-xs muted\">For administrators</div></div>
+        <i class=\"fa-solid fa-chevron-right muted\"></i>
+      </a>
+    </div>
+
+    <button class=\"btn btn-danger mt-16\" id=\"logoutBtn\" data-testid=\"settings-logout-btn\">
+      <i class=\"fa-solid fa-right-from-bracket\"></i> &nbsp;Logout
+    </button>
+
+    <p class=\"text-xs muted center mt-16\">Chinna Gaming v1.0 · Demo Build</p>
+  </div>
+
+  <script type=\"module\">
+    import { requireAuth, signOut, auth, db, doc, updateDoc, getUserData, setDoc } from \"./firebase.js\";
+    import { bottomNav, toast } from \"./script.js\";
+    bottomNav(\"profile\");
+
+    requireAuth(async (user) => {
+      const ref = doc(db, \"settings\", user.uid);
+      // No-op; settings already created at signup
+      const persist = async (data) => updateDoc(ref, data).catch(()=>setDoc(ref,data));
+      document.getElementById(\"darkMode\").addEventListener(\"change\", e => { persist({darkMode:e.target.checked}); toast(\"Saved\", \"success\"); });
+      document.getElementById(\"notif\").addEventListener(\"change\", e => { persist({notifications:e.target.checked}); toast(\"Saved\", \"success\"); });
+      document.getElementById(\"lang\").addEventListener(\"change\", e => { persist({language:e.target.value}); toast(\"Language updated\", \"success\"); });
+    });
+
+    document.getElementById(\"logoutBtn\").addEventListener(\"click\", async () => {
+      await signOut(auth);
+      location.href = \"index.html\";
+    });
+  </script>
+</body>
+</html>
+"
