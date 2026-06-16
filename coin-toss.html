@@ -1,0 +1,123 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · Coin Toss</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"app\" data-testid=\"coin-toss-page\">
+    <div class=\"page-head\">
+      <a class=\"back-btn\" href=\"games.html\"><i class=\"fa-solid fa-arrow-left\"></i></a>
+      <h2>Coin Toss</h2>
+      <div class=\"flex-1\"></div>
+      <span class=\"tag gold\" data-testid=\"balance-pill\">💰 <span id=\"balPill\">0</span></span>
+    </div>
+
+    <div class=\"coin-stage\">
+      <div class=\"coin\" id=\"coin\" data-testid=\"coin-3d\">
+        <div class=\"face front\">H</div>
+        <div class=\"face back\">T</div>
+      </div>
+    </div>
+
+    <p class=\"text-sm muted center mb-12\" id=\"resultText\">Pick your side & bet to play</p>
+
+    <div class=\"pick-row\">
+      <div class=\"pick-card\" data-pick=\"H\" data-testid=\"pick-heads\">
+        <div style=\"font-size:42px\">🪙</div><h5>Heads</h5><span>1.95×</span>
+      </div>
+      <div class=\"pick-card\" data-pick=\"T\" data-testid=\"pick-tails\">
+        <div style=\"font-size:42px\">🎯</div><h5>Tails</h5><span>1.95×</span>
+      </div>
+    </div>
+
+    <div class=\"glass mt-16\">
+      <label class=\"label\">Bet Amount</label>
+      <div class=\"bet-chips\">
+        <button class=\"chip\" data-bet=\"10\">10</button>
+        <button class=\"chip\" data-bet=\"50\">50</button>
+        <button class=\"chip\" data-bet=\"100\">100</button>
+        <button class=\"chip\" data-bet=\"500\">500</button>
+        <button class=\"chip\" data-bet=\"1000\">1K</button>
+      </div>
+      <input type=\"number\" class=\"input mt-8\" id=\"bet\" placeholder=\"Custom amount\" data-testid=\"bet-input\" />
+      <button class=\"btn btn-primary mt-12\" id=\"playBtn\" data-testid=\"play-btn\">
+        <i class=\"fa-solid fa-circle-play\"></i> &nbsp;PLAY
+      </button>
+    </div>
+  </div>
+
+  <script type=\"module\">
+    import {
+      requireAuth, getUserData, db, doc, updateDoc, increment, addDoc, collection,
+      serverTimestamp, logTransaction
+    } from \"./firebase.js\";
+    import { bottomNav, toast, fmtCoins } from \"./script.js\";
+    bottomNav(\"games\");
+
+    let pick = null, bet = 0, balance = 0, user = null;
+
+    requireAuth(async (u) => {
+      user = u;
+      const { wallet } = await getUserData(u.uid);
+      balance = wallet?.balance || 0;
+      document.getElementById(\"balPill\").textContent = fmtCoins(balance);
+    });
+
+    document.querySelectorAll(\".pick-card\").forEach(c => c.addEventListener(\"click\", () => {
+      document.querySelectorAll(\".pick-card\").forEach(x => x.classList.remove(\"selected\"));
+      c.classList.add(\"selected\");
+      pick = c.dataset.pick;
+    }));
+    document.querySelectorAll(\".chip\").forEach(c => c.addEventListener(\"click\", () => {
+      document.querySelectorAll(\".chip\").forEach(x => x.classList.remove(\"active\"));
+      c.classList.add(\"active\");
+      bet = parseInt(c.dataset.bet);
+      document.getElementById(\"bet\").value = bet;
+    }));
+    document.getElementById(\"bet\").addEventListener(\"input\", e => bet = parseInt(e.target.value || 0));
+
+    document.getElementById(\"playBtn\").addEventListener(\"click\", async () => {
+      if (!pick) return toast(\"Pick Heads or Tails\", \"error\");
+      if (!bet || bet < 10) return toast(\"Min bet 10 coins\", \"error\");
+      if (bet > balance) return toast(\"Insufficient balance\", \"error\");
+
+      const coin = document.getElementById(\"coin\");
+      const playBtn = document.getElementById(\"playBtn\");
+      playBtn.disabled = true;
+      coin.classList.add(\"spinning\");
+      document.getElementById(\"resultText\").textContent = \"Tossing...\";
+
+      // determine result
+      const result = Math.random() < 0.5 ? \"H\" : \"T\";
+      const win = result === pick;
+      const reward = win ? Math.floor(bet * 1.95) : 0;
+
+      setTimeout(async () => {
+        coin.classList.remove(\"spinning\");
+        coin.style.transform = result === \"H\" ? \"rotateY(0deg)\" : \"rotateY(180deg)\";
+
+        const net = win ? (reward - bet) : -bet;
+        balance += net;
+        document.getElementById(\"balPill\").textContent = fmtCoins(balance);
+        await updateDoc(doc(db, \"wallets\", user.uid), { balance: increment(net), xp: increment(Math.abs(bet)/10) });
+        await addDoc(collection(db, \"gameHistory\"), {
+          uid: user.uid, game: \"coin-toss\", pick, result, bet, win, reward, createdAt: serverTimestamp()
+        });
+        await logTransaction(user.uid, win ? \"win\" : \"loss\", win ? reward : bet, `Coin Toss · ${result}`);
+
+        document.getElementById(\"resultText\").innerHTML = win
+          ? `<span style=\"color:var(--green)\">🎉 You Won +${fmtCoins(reward)} coins!</span>`
+          : `<span style=\"color:var(--red)\">😢 You Lost -${fmtCoins(bet)} coins</span>`;
+        playBtn.disabled = false;
+      }, 1800);
+    });
+  </script>
+</body>
+</html>
+"
