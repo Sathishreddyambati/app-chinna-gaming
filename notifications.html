@@ -1,0 +1,45 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · Notifications</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"app\" data-testid=\"notifications-page\">
+    <div class=\"page-head\">
+      <a class=\"back-btn\" href=\"home.html\"><i class=\"fa-solid fa-arrow-left\"></i></a>
+      <h2>Notifications</h2>
+    </div>
+
+    <div class=\"glass\">
+      <div class=\"txn\">
+        <div class=\"txn-icon\" style=\"background:rgba(52,211,153,.18); color:var(--green)\"><i class=\"fa-solid fa-gift\"></i></div>
+        <div class=\"txn-info\"><h6>Welcome Bonus Credited</h6><span>1000 demo coins added to your wallet</span></div>
+      </div>
+      <div class=\"txn\">
+        <div class=\"txn-icon\" style=\"background:rgba(251,191,36,.18); color:var(--gold)\"><i class=\"fa-solid fa-crown\"></i></div>
+        <div class=\"txn-info\"><h6>VIP Bronze Activated</h6><span>Claim your 50 daily coins now</span></div>
+      </div>
+      <div class=\"txn\">
+        <div class=\"txn-icon\" style=\"background:rgba(56,189,248,.18); color:var(--neon)\"><i class=\"fa-solid fa-bullhorn\"></i></div>
+        <div class=\"txn-info\"><h6>New Game: Double Coin Toss!</h6><span>Try the latest 2-coin prediction game</span></div>
+      </div>
+    </div>
+
+    <p class=\"text-xs muted center mt-16\">You're all caught up 🎉</p>
+  </div>
+
+  <script type=\"module\">
+    import { requireAuth } from \"./firebase.js\";
+    import { bottomNav } from \"./script.js\";
+    bottomNav(\"home\");
+    requireAuth(()=>{});
+  </script>
+</body>
+</html>
+"
