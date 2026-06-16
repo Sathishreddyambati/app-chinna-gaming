@@ -1,0 +1,145 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · Home</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"app\" data-testid=\"home-page\">
+    <!-- Top bar -->
+    <div class=\"top-bar\">
+      <div class=\"brand\">
+        <div class=\"brand-logo\">CG</div>
+        <div>
+          <div class=\"brand-name\" id=\"userName\">Welcome</div>
+          <div class=\"brand-tag\">Demo Account</div>
+        </div>
+      </div>
+      <div style=\"display:flex; gap:8px;\">
+        <button class=\"icon-btn\" onclick=\"location.href='notifications.html'\" data-testid=\"notifications-btn\" style=\"position:relative;\">
+          <i class=\"fa-solid fa-bell\"></i><span class=\"badge\">3</span>
+        </button>
+        <button class=\"icon-btn\" onclick=\"location.href='profile.html'\" data-testid=\"profile-btn\">
+          <i class=\"fa-solid fa-user\"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Wallet card -->
+    <div class=\"wallet-card\" data-testid=\"wallet-card\">
+      <div class=\"wallet-label\">Demo Wallet Balance</div>
+      <div class=\"wallet-amount\" data-testid=\"wallet-balance\"><span id=\"bal\">0</span><span class=\"unit\">coins</span></div>
+      <div class=\"wallet-actions\">
+        <button class=\"btn btn-neon\" onclick=\"location.href='deposit.html'\" data-testid=\"deposit-btn\">
+          <i class=\"fa-solid fa-plus\"></i> Deposit
+        </button>
+        <button class=\"btn btn-ghost\" onclick=\"location.href='withdraw.html'\" data-testid=\"withdraw-btn\">
+          <i class=\"fa-solid fa-arrow-up-right-from-square\"></i> Withdraw
+        </button>
+      </div>
+      <div class=\"wallet-mini\">
+        <div><b id=\"bonus\">0</b><span>Bonus</span></div>
+        <div><b id=\"reward\">0</b><span>Reward</span></div>
+        <div><b id=\"total\">0</b><span>Total</span></div>
+      </div>
+    </div>
+
+    <!-- Banner slider -->
+    <div class=\"section-title\"><h3>Promotions</h3></div>
+    <div class=\"banner\" data-testid=\"promo-banner\">
+      <div class=\"banner-slide active\" style=\"background: linear-gradient(135deg,#7c3aed,#0ea5e9);\">
+        🎁 Welcome Bonus!<span class=\"sub\">1000 demo coins on signup</span>
+      </div>
+      <div class=\"banner-slide\" style=\"background: linear-gradient(135deg,#f59e0b,#ec4899);\">
+        👑 VIP Rewards<span class=\"sub\">Climb tiers, unlock daily bonus</span>
+      </div>
+      <div class=\"banner-slide\" style=\"background: linear-gradient(135deg,#10b981,#22d3ee);\">
+        🤝 Refer & Earn<span class=\"sub\">100 coins per friend</span>
+      </div>
+      <div class=\"banner-dots\"><span class=\"active\"></span><span></span><span></span></div>
+    </div>
+
+    <!-- Games -->
+    <div class=\"section-title\"><h3>Featured Games</h3><a href=\"games.html\">View all →</a></div>
+    <div class=\"game-grid\">
+      <div class=\"game-card coin\" onclick=\"location.href='coin-toss.html'\" data-testid=\"game-coin-toss\">
+        <h4>Coin Toss</h4><p>Heads or Tails — 1.95×</p>
+        <div class=\"game-icon\">🪙</div>
+        <span class=\"play-pill\">▶ Play</span>
+      </div>
+      <div class=\"game-card double\" onclick=\"location.href='double-coin-toss.html'\" data-testid=\"game-double-coin\">
+        <h4>Double Coin</h4><p>Predict 2 coins — 3.8×</p>
+        <div class=\"game-icon\">🎲</div>
+        <span class=\"play-pill\">▶ Play</span>
+      </div>
+    </div>
+
+    <!-- VIP + Referral -->
+    <div class=\"section-title\"><h3>Rewards</h3></div>
+    <div class=\"promo-row\">
+      <div class=\"promo vip\" onclick=\"location.href='vip.html'\" data-testid=\"vip-card\">
+        <h5>👑 VIP Club</h5>
+        <p id=\"vipTier\">Bronze · 50 daily</p>
+        <button class=\"btn btn-ghost text-xs\" style=\"margin-top:10px; padding:6px 12px;\">Explore</button>
+      </div>
+      <div class=\"promo refer\" onclick=\"location.href='referral.html'\" data-testid=\"referral-card\">
+        <h5>🤝 Refer Friends</h5>
+        <p>Earn 100 coins each</p>
+        <button class=\"btn btn-ghost text-xs\" style=\"margin-top:10px; padding:6px 12px;\">Share</button>
+      </div>
+    </div>
+
+    <!-- Recent activity -->
+    <div class=\"section-title\"><h3>Recent Activity</h3><a href=\"history.html\">See all →</a></div>
+    <div class=\"glass\" id=\"recentList\" data-testid=\"recent-list\">
+      <div class=\"loader\"></div>
+    </div>
+  </div>
+
+  <script type=\"module\">
+    import {
+      requireAuth, getUserData, getVipTier, db,
+      collection, query, where, orderBy, limit, getDocs
+    } from \"./firebase.js\";
+    import { bottomNav, startBanner, fmtCoins, fmtDate, toast } from \"./script.js\";
+
+    bottomNav(\"home\");
+    startBanner();
+
+    requireAuth(async (user) => {
+      const { user: u, wallet: w } = await getUserData(user.uid);
+      if (u) document.getElementById(\"userName\").textContent = \"Hi, \" + (u.username || \"Player\");
+      if (w) {
+        document.getElementById(\"bal\").textContent = fmtCoins(w.balance);
+        document.getElementById(\"bonus\").textContent = fmtCoins(w.bonus);
+        document.getElementById(\"reward\").textContent = fmtCoins(w.reward);
+        document.getElementById(\"total\").textContent = fmtCoins(w.balance + w.bonus + w.reward);
+        const { tier } = getVipTier(w.xp || 0);
+        document.getElementById(\"vipTier\").textContent = `${tier.name} · ${tier.dailyBonus} daily`;
+      }
+
+      // Recent activity
+      const q = query(collection(db, \"transactions\"), where(\"uid\", \"==\", user.uid), orderBy(\"createdAt\", \"desc\"), limit(5));
+      const snap = await getDocs(q);
+      const list = document.getElementById(\"recentList\");
+      if (snap.empty) { list.innerHTML = '<p class=\"muted text-sm center\" style=\"padding:14px;\">No transactions yet</p>'; return; }
+      list.innerHTML = snap.docs.map(d => {
+        const t = d.data();
+        const pos = [\"deposit\",\"win\",\"bonus\",\"reward\"].includes(t.type);
+        const icon = { deposit:\"fa-arrow-down\", withdraw:\"fa-arrow-up\", win:\"fa-trophy\", loss:\"fa-circle-xmark\", bonus:\"fa-gift\", reward:\"fa-star\" }[t.type] || \"fa-circle\";
+        return `<div class=\"txn\">
+          <div class=\"txn-icon\"><i class=\"fa-solid ${icon}\"></i></div>
+          <div class=\"txn-info\"><h6>${t.note || t.type}</h6><span>${fmtDate(t.createdAt)}</span></div>
+          <div class=\"txn-amt ${pos?'pos':'neg'}\">${pos?'+':'-'}${fmtCoins(t.amount)}</div>
+        </div>`;
+      }).join(\"\");
+    });
+  </script>
+</body>
+</html>
+"
