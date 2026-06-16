@@ -1,0 +1,67 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · History</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"app\" data-testid=\"history-page\">
+    <div class=\"page-head\">
+      <a class=\"back-btn\" href=\"home.html\"><i class=\"fa-solid fa-arrow-left\"></i></a>
+      <h2>Transaction History</h2>
+    </div>
+
+    <div class=\"filter-row\" data-testid=\"filter-row\">
+      <button class=\"chip active\" data-filter=\"all\">All</button>
+      <button class=\"chip\" data-filter=\"deposit\">Deposits</button>
+      <button class=\"chip\" data-filter=\"withdraw\">Withdrawals</button>
+      <button class=\"chip\" data-filter=\"win\">Wins</button>
+      <button class=\"chip\" data-filter=\"loss\">Losses</button>
+      <button class=\"chip\" data-filter=\"bonus\">Bonus</button>
+      <button class=\"chip\" data-filter=\"reward\">Rewards</button>
+    </div>
+
+    <div class=\"glass\" id=\"list\" data-testid=\"history-list\"><div class=\"loader\"></div></div>
+  </div>
+
+  <script type=\"module\">
+    import { requireAuth, db, collection, query, where, orderBy, getDocs } from \"./firebase.js\";
+    import { bottomNav, fmtCoins, fmtDate } from \"./script.js\";
+    bottomNav(\"wallet\");
+
+    let all = [], filter = \"all\";
+    const render = () => {
+      const data = filter === \"all\" ? all : all.filter(t => t.type === filter);
+      const list = document.getElementById(\"list\");
+      if (!data.length) { list.innerHTML = '<p class=\"muted text-sm center\" style=\"padding:14px;\">No transactions</p>'; return; }
+      list.innerHTML = data.map(t => {
+        const pos = [\"deposit\",\"win\",\"bonus\",\"reward\"].includes(t.type);
+        const icon = { deposit:\"fa-arrow-down\", withdraw:\"fa-arrow-up\", win:\"fa-trophy\", loss:\"fa-circle-xmark\", bonus:\"fa-gift\", reward:\"fa-star\" }[t.type] || \"fa-circle\";
+        return `<div class=\"txn\"><div class=\"txn-icon\"><i class=\"fa-solid ${icon}\"></i></div>
+          <div class=\"txn-info\"><h6>${t.note || t.type}</h6><span>${fmtDate(t.createdAt)}</span></div>
+          <div class=\"txn-amt ${pos?'pos':'neg'}\">${pos?'+':'-'}${fmtCoins(t.amount)}</div></div>`;
+      }).join(\"\");
+    };
+
+    requireAuth(async (user) => {
+      const q = query(collection(db,\"transactions\"), where(\"uid\",\"==\",user.uid), orderBy(\"createdAt\",\"desc\"));
+      const snap = await getDocs(q);
+      all = snap.docs.map(d => d.data());
+      render();
+    });
+
+    document.querySelectorAll(\".chip\").forEach(c => c.addEventListener(\"click\", () => {
+      document.querySelectorAll(\".chip\").forEach(x => x.classList.remove(\"active\"));
+      c.classList.add(\"active\");
+      filter = c.dataset.filter;
+      render();
+    }));
+  </script>
+</body>
+</html>
+"
