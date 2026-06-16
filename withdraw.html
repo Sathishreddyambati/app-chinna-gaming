@@ -1,0 +1,112 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · Withdraw</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"app\" data-testid=\"withdraw-page\">
+    <div class=\"page-head\">
+      <a class=\"back-btn\" href=\"home.html\"><i class=\"fa-solid fa-arrow-left\"></i></a>
+      <h2>Withdraw Coins</h2>
+    </div>
+
+    <!-- UPI setup card (shown if not set) -->
+    <div class=\"glass\" id=\"upiCard\" style=\"display:none;\" data-testid=\"upi-setup\">
+      <h3 class=\"mb-8\">Add UPI ID</h3>
+      <p class=\"muted text-sm mb-12\">We need your UPI ID for demo withdrawals.</p>
+      <input type=\"text\" class=\"input mb-12\" id=\"upiInput\" placeholder=\"example@upi\" data-testid=\"upi-input\"/>
+      <button class=\"btn btn-primary\" id=\"saveUpi\" data-testid=\"save-upi-btn\">Save UPI ID</button>
+    </div>
+
+    <!-- Withdraw card -->
+    <div class=\"glass\" id=\"withdrawCard\" style=\"display:none;\">
+      <div class=\"row mb-12\">
+        <span class=\"text-sm muted\">Available</span>
+        <b id=\"balShow\">0 coins</b>
+      </div>
+      <div class=\"row mb-12\">
+        <span class=\"text-sm muted\">UPI ID</span>
+        <b class=\"text-sm\" id=\"upiShow\">-</b>
+      </div>
+      <label class=\"label\">Quick Amount</label>
+      <div class=\"amt-grid smaller\">
+        <button class=\"amt-btn\" data-amt=\"100\" data-testid=\"wd-100\">100</button>
+        <button class=\"amt-btn\" data-amt=\"200\" data-testid=\"wd-200\">200</button>
+        <button class=\"amt-btn\" data-amt=\"500\" data-testid=\"wd-500\">500</button>
+        <button class=\"amt-btn\" data-amt=\"1000\" data-testid=\"wd-1000\">1,000</button>
+      </div>
+      <div class=\"form-group\">
+        <label class=\"label\">Or custom amount</label>
+        <input type=\"number\" class=\"input\" id=\"customAmt\" placeholder=\"Enter coins\" data-testid=\"withdraw-custom-input\"/>
+      </div>
+      <button class=\"btn btn-primary\" id=\"wdBtn\" data-testid=\"withdraw-submit-btn\">
+        <i class=\"fa-solid fa-paper-plane\"></i> &nbsp;Submit Withdrawal
+      </button>
+    </div>
+  </div>
+
+  <script type=\"module\">
+    import {
+      requireAuth, getUserData, db, doc, updateDoc, addDoc, collection,
+      serverTimestamp, increment, logTransaction
+    } from \"./firebase.js\";
+    import { bottomNav, toast, fmtCoins } from \"./script.js\";
+    bottomNav(\"wallet\");
+
+    let amount = 0;
+    let currentUser = null;
+    let walletData = null;
+
+    requireAuth(async (user) => {
+      currentUser = user;
+      const { user: u, wallet: w } = await getUserData(user.uid);
+      walletData = w;
+      if (!u.upiId) {
+        document.getElementById(\"upiCard\").style.display = \"block\";
+      } else {
+        document.getElementById(\"withdrawCard\").style.display = \"block\";
+        document.getElementById(\"balShow\").textContent = fmtCoins(w.balance) + \" coins\";
+        document.getElementById(\"upiShow\").textContent = u.upiId;
+      }
+    });
+
+    document.getElementById(\"saveUpi\").addEventListener(\"click\", async () => {
+      const upi = document.getElementById(\"upiInput\").value.trim();
+      if (!/^[\w.\-]+@[\w]+$/.test(upi)) return toast(\"Invalid UPI format (e.g. name@bank)\", \"error\");
+      await updateDoc(doc(db, \"users\", currentUser.uid), { upiId: upi });
+      toast(\"UPI ID saved ✓\", \"success\");
+      setTimeout(()=>location.reload(), 800);
+    });
+
+    document.querySelectorAll(\".amt-btn\").forEach(b => b.addEventListener(\"click\", () => {
+      document.querySelectorAll(\".amt-btn\").forEach(x => x.classList.remove(\"active\"));
+      b.classList.add(\"active\");
+      amount = parseInt(b.dataset.amt);
+      document.getElementById(\"customAmt\").value = \"\";
+    }));
+    document.getElementById(\"customAmt\").addEventListener(\"input\", (e) => {
+      document.querySelectorAll(\".amt-btn\").forEach(x => x.classList.remove(\"active\"));
+      amount = parseInt(e.target.value || 0);
+    });
+
+    document.getElementById(\"wdBtn\").addEventListener(\"click\", async () => {
+      if (!amount || amount < 10) return toast(\"Enter valid amount\", \"error\");
+      if (amount > (walletData?.balance || 0)) return toast(\"Insufficient Demo Balance\", \"error\");
+      await updateDoc(doc(db, \"wallets\", currentUser.uid), { balance: increment(-amount) });
+      await addDoc(collection(db, \"withdrawals\"), {
+        uid: currentUser.uid, amount, status: \"pending\", createdAt: serverTimestamp()
+      });
+      await logTransaction(currentUser.uid, \"withdraw\", amount, \"Withdrawal Request\");
+      toast(\"Withdrawal Request Submitted ✓\", \"success\");
+      setTimeout(()=>location.href=\"wallet.html\", 1200);
+    });
+  </script>
+</body>
+</html>
+"
