@@ -1,0 +1,65 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · Wallet</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"app\" data-testid=\"wallet-page\">
+    <div class=\"page-head\">
+      <a class=\"back-btn\" href=\"home.html\"><i class=\"fa-solid fa-arrow-left\"></i></a>
+      <h2>My Wallet</h2>
+    </div>
+
+    <div class=\"wallet-card\">
+      <div class=\"wallet-label\">Total Demo Coins</div>
+      <div class=\"wallet-amount\"><span id=\"total\">0</span><span class=\"unit\">coins</span></div>
+      <div class=\"wallet-actions\">
+        <button class=\"btn btn-neon\" onclick=\"location.href='deposit.html'\" data-testid=\"wallet-deposit-btn\">Deposit</button>
+        <button class=\"btn btn-ghost\" onclick=\"location.href='withdraw.html'\" data-testid=\"wallet-withdraw-btn\">Withdraw</button>
+      </div>
+    </div>
+
+    <div class=\"stat-grid mt-16\">
+      <div class=\"stat-cell\"><b id=\"bal\">0</b><span>Balance</span></div>
+      <div class=\"stat-cell\"><b id=\"bonus\">0</b><span>Bonus</span></div>
+      <div class=\"stat-cell\"><b id=\"reward\">0</b><span>Reward</span></div>
+    </div>
+
+    <div class=\"section-title\"><h3>Transaction History</h3><a href=\"history.html\">All →</a></div>
+    <div class=\"glass\" id=\"txnList\"><div class=\"loader\"></div></div>
+  </div>
+
+  <script type=\"module\">
+    import { requireAuth, getUserData, db, collection, query, where, orderBy, limit, getDocs } from \"./firebase.js\";
+    import { bottomNav, fmtCoins, fmtDate } from \"./script.js\";
+    bottomNav(\"wallet\");
+    requireAuth(async (user) => {
+      const { wallet: w } = await getUserData(user.uid);
+      document.getElementById(\"bal\").textContent = fmtCoins(w?.balance);
+      document.getElementById(\"bonus\").textContent = fmtCoins(w?.bonus);
+      document.getElementById(\"reward\").textContent = fmtCoins(w?.reward);
+      document.getElementById(\"total\").textContent = fmtCoins((w?.balance||0)+(w?.bonus||0)+(w?.reward||0));
+
+      const q = query(collection(db,\"transactions\"), where(\"uid\",\"==\",user.uid), orderBy(\"createdAt\",\"desc\"), limit(10));
+      const snap = await getDocs(q);
+      const list = document.getElementById(\"txnList\");
+      if (snap.empty) { list.innerHTML = '<p class=\"muted text-sm center\" style=\"padding:14px;\">No transactions yet</p>'; return; }
+      list.innerHTML = snap.docs.map(d => {
+        const t = d.data();
+        const pos = [\"deposit\",\"win\",\"bonus\",\"reward\"].includes(t.type);
+        const icon = { deposit:\"fa-arrow-down\", withdraw:\"fa-arrow-up\", win:\"fa-trophy\", loss:\"fa-circle-xmark\", bonus:\"fa-gift\", reward:\"fa-star\" }[t.type] || \"fa-circle\";
+        return `<div class=\"txn\"><div class=\"txn-icon\"><i class=\"fa-solid ${icon}\"></i></div>
+          <div class=\"txn-info\"><h6>${t.note || t.type}</h6><span>${fmtDate(t.createdAt)}</span></div>
+          <div class=\"txn-amt ${pos?'pos':'neg'}\">${pos?'+':'-'}${fmtCoins(t.amount)}</div></div>`;
+      }).join(\"\");
+    });
+  </script>
+</body>
+</html>
+"
