@@ -1,0 +1,72 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · Deposit</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"app\" data-testid=\"deposit-page\">
+    <div class=\"page-head\">
+      <a class=\"back-btn\" href=\"home.html\"><i class=\"fa-solid fa-arrow-left\"></i></a>
+      <h2>Deposit Coins</h2>
+    </div>
+
+    <div class=\"glass\">
+      <p class=\"muted text-sm mb-12\">Add demo coins to your wallet for entertainment purposes.</p>
+      <label class=\"label\">Select Quick Amount</label>
+      <div class=\"amt-grid\">
+        <button class=\"amt-btn\" data-amt=\"100\" data-testid=\"quick-amt-100\">100</button>
+        <button class=\"amt-btn\" data-amt=\"200\" data-testid=\"quick-amt-200\">200</button>
+        <button class=\"amt-btn\" data-amt=\"300\" data-testid=\"quick-amt-300\">300</button>
+        <button class=\"amt-btn\" data-amt=\"500\" data-testid=\"quick-amt-500\">500</button>
+        <button class=\"amt-btn\" data-amt=\"1000\" data-testid=\"quick-amt-1000\">1,000</button>
+        <button class=\"amt-btn\" data-amt=\"2000\" data-testid=\"quick-amt-2000\">2,000</button>
+        <button class=\"amt-btn\" data-amt=\"5000\" data-testid=\"quick-amt-5000\" style=\"grid-column: span 3;\">5,000</button>
+      </div>
+      <div class=\"form-group\">
+        <label class=\"label\">Or enter custom amount</label>
+        <input type=\"number\" class=\"input\" id=\"customAmt\" placeholder=\"Enter coins\" min=\"10\" data-testid=\"deposit-custom-input\"/>
+      </div>
+      <button class=\"btn btn-primary\" id=\"goBtn\" data-testid=\"deposit-continue-btn\">
+        <i class=\"fa-solid fa-arrow-right\"></i> &nbsp;Continue to Pay
+      </button>
+    </div>
+
+    <div class=\"demo-note\">
+      <i class=\"fa-solid fa-shield\"></i> Demo only — no real money is transacted.
+    </div>
+  </div>
+
+  <script type=\"module\">
+    import { requireAuth } from \"./firebase.js\";
+    import { bottomNav, toast } from \"./script.js\";
+    bottomNav(\"wallet\");
+    requireAuth(()=>{});
+
+    let amount = 0;
+    document.querySelectorAll(\".amt-btn\").forEach(b => {
+      b.addEventListener(\"click\", () => {
+        document.querySelectorAll(\".amt-btn\").forEach(x => x.classList.remove(\"active\"));
+        b.classList.add(\"active\");
+        amount = parseInt(b.dataset.amt);
+        document.getElementById(\"customAmt\").value = \"\";
+      });
+    });
+    document.getElementById(\"customAmt\").addEventListener(\"input\", (e) => {
+      document.querySelectorAll(\".amt-btn\").forEach(x => x.classList.remove(\"active\"));
+      amount = parseInt(e.target.value || 0);
+    });
+    document.getElementById(\"goBtn\").addEventListener(\"click\", () => {
+      if (!amount || amount < 10) return toast(\"Enter at least 10 coins\", \"error\");
+      sessionStorage.setItem(\"depositAmt\", amount);
+      location.href = \"deposit-qr.html\";
+    });
+  </script>
+</body>
+</html>
+"
