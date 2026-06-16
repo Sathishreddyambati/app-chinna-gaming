@@ -1,0 +1,71 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · Create Account</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"auth-wrap\">
+    <div class=\"auth-logo\">CG</div>
+    <h1 class=\"auth-title\">Create Account</h1>
+    <p class=\"auth-sub\">Get 1000 demo coins on signup 🎁</p>
+
+    <form id=\"regForm\" class=\"glass\" data-testid=\"register-form\">
+      <div class=\"form-group\">
+        <label class=\"label\">Username</label>
+        <input type=\"text\" class=\"input\" id=\"username\" required minlength=\"3\" data-testid=\"register-username-input\"/>
+      </div>
+      <div class=\"form-group\">
+        <label class=\"label\">Email</label>
+        <input type=\"email\" class=\"input\" id=\"email\" required data-testid=\"register-email-input\"/>
+      </div>
+      <div class=\"form-group\">
+        <label class=\"label\">Password</label>
+        <input type=\"password\" class=\"input\" id=\"password\" required minlength=\"6\" data-testid=\"register-password-input\"/>
+      </div>
+      <div class=\"form-group\">
+        <label class=\"label\">Referral Code (optional)</label>
+        <input type=\"text\" class=\"input\" id=\"referral\" placeholder=\"CGXXXXXX\" data-testid=\"register-referral-input\"/>
+      </div>
+      <button type=\"submit\" class=\"btn btn-primary\" data-testid=\"register-submit-btn\">
+        <i class=\"fa-solid fa-user-plus\"></i> &nbsp;Create Account
+      </button>
+    </form>
+
+    <p class=\"auth-foot\">Already have an account? <a href=\"index.html\">Sign in</a></p>
+  </div>
+
+  <script type=\"module\">
+    import {
+      auth, createUserWithEmailAndPassword, updateProfile, createUserDocument
+    } from \"./firebase.js\";
+    import { toast } from \"./script.js\";
+
+    document.getElementById(\"regForm\").addEventListener(\"submit\", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById(\"username\").value.trim();
+      const email = document.getElementById(\"email\").value.trim();
+      const pwd = document.getElementById(\"password\").value;
+      const ref = document.getElementById(\"referral\").value.trim().toUpperCase();
+      const btn = e.target.querySelector(\"button\");
+      btn.disabled = true;
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, pwd);
+        await updateProfile(cred.user, { displayName: username });
+        await createUserDocument(cred.user, { username, referredBy: ref || null });
+        toast(\"Account created! 🎉\", \"success\");
+        setTimeout(() => window.location.href = \"home.html\", 700);
+      } catch (err) {
+        toast(err.message.replace(\"Firebase: \", \"\"), \"error\");
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
+"
