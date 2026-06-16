@@ -1,0 +1,98 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · Profile</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"app\" data-testid=\"profile-page\">
+    <div class=\"page-head\">
+      <a class=\"back-btn\" href=\"home.html\"><i class=\"fa-solid fa-arrow-left\"></i></a>
+      <h2>Profile</h2>
+      <div class=\"flex-1\"></div>
+      <button class=\"icon-btn\" onclick=\"location.href='settings.html'\" data-testid=\"settings-btn\">
+        <i class=\"fa-solid fa-gear\"></i>
+      </button>
+    </div>
+
+    <div class=\"glass center\" style=\"flex-direction:column;\">
+      <div class=\"avatar-big\" id=\"avatar\">U</div>
+      <h2 id=\"username\">Player</h2>
+      <p class=\"muted text-sm\" id=\"email\">-</p>
+      <div class=\"row gap-12 mt-12\">
+        <span class=\"tag gold\" id=\"vipTag\">Bronze VIP</span>
+        <span class=\"tag blue\" id=\"uidTag\">UID: -</span>
+      </div>
+      <p class=\"text-xs muted mt-8\" id=\"memberSince\">Member since -</p>
+    </div>
+
+    <div class=\"stat-grid\">
+      <div class=\"stat-cell\"><b id=\"balStat\">0</b><span>Coins</span></div>
+      <div class=\"stat-cell\"><b id=\"winsStat\">0</b><span>Wins</span></div>
+      <div class=\"stat-cell\"><b id=\"gamesStat\">0</b><span>Games</span></div>
+    </div>
+
+    <div class=\"section-title\"><h3>Quick Links</h3></div>
+    <div class=\"glass\">
+      <a href=\"referral.html\" class=\"row\" style=\"padding:14px 0; border-bottom:1px solid var(--glass-border)\">
+        <span><i class=\"fa-solid fa-share-nodes\"></i> &nbsp;Refer & Earn</span><i class=\"fa-solid fa-chevron-right muted\"></i>
+      </a>
+      <a href=\"history.html\" class=\"row\" style=\"padding:14px 0; border-bottom:1px solid var(--glass-border)\">
+        <span><i class=\"fa-solid fa-clock-rotate-left\"></i> &nbsp;Game History</span><i class=\"fa-solid fa-chevron-right muted\"></i>
+      </a>
+      <a href=\"vip.html\" class=\"row\" style=\"padding:14px 0; border-bottom:1px solid var(--glass-border)\">
+        <span><i class=\"fa-solid fa-crown\"></i> &nbsp;VIP Club</span><i class=\"fa-solid fa-chevron-right muted\"></i>
+      </a>
+      <a href=\"settings.html\" class=\"row\" style=\"padding:14px 0\">
+        <span><i class=\"fa-solid fa-gear\"></i> &nbsp;Settings</span><i class=\"fa-solid fa-chevron-right muted\"></i>
+      </a>
+    </div>
+
+    <button class=\"btn btn-danger mt-16\" id=\"logoutBtn\" data-testid=\"logout-btn\">
+      <i class=\"fa-solid fa-right-from-bracket\"></i> &nbsp;Logout
+    </button>
+  </div>
+
+  <script type=\"module\">
+    import {
+      requireAuth, getUserData, signOut, auth, getVipTier, db,
+      collection, query, where, getDocs
+    } from \"./firebase.js\";
+    import { bottomNav, fmtCoins, fmtDate } from \"./script.js\";
+    bottomNav(\"profile\");
+
+    requireAuth(async (user) => {
+      const { user: u, wallet: w } = await getUserData(user.uid);
+      if (u) {
+        document.getElementById(\"avatar\").textContent = u.avatar || \"U\";
+        document.getElementById(\"username\").textContent = u.username;
+        document.getElementById(\"email\").textContent = u.email;
+        document.getElementById(\"uidTag\").textContent = \"UID: \" + user.uid.substring(0,8);
+        document.getElementById(\"memberSince\").textContent = \"Member since \" + fmtDate(u.memberSince);
+      }
+      if (w) {
+        document.getElementById(\"balStat\").textContent = fmtCoins(w.balance);
+        document.getElementById(\"vipTag\").textContent = getVipTier(w.xp || 0).tier.name + \" VIP\";
+      }
+
+      const q = query(collection(db, \"gameHistory\"), where(\"uid\", \"==\", user.uid));
+      const snap = await getDocs(q);
+      const games = snap.size;
+      const wins = snap.docs.filter(d => d.data().win).length;
+      document.getElementById(\"gamesStat\").textContent = games;
+      document.getElementById(\"winsStat\").textContent = wins;
+    });
+
+    document.getElementById(\"logoutBtn\").addEventListener(\"click\", async () => {
+      await signOut(auth);
+      location.href = \"index.html\";
+    });
+  </script>
+</body>
+</html>
+"
