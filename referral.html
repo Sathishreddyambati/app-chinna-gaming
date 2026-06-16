@@ -1,0 +1,85 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · Refer & Earn</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"app\" data-testid=\"referral-page\">
+    <div class=\"page-head\">
+      <a class=\"back-btn\" href=\"home.html\"><i class=\"fa-solid fa-arrow-left\"></i></a>
+      <h2>Refer & Earn</h2>
+    </div>
+
+    <div class=\"glass\" style=\"background: linear-gradient(135deg, #22d3ee 0%, #6366f1 100%); text-align:center;\">
+      <div style=\"font-size:60px;\">🤝</div>
+      <h2>Invite Friends</h2>
+      <p class=\"text-sm\" style=\"opacity:.9\">Earn 100 coins per referral</p>
+    </div>
+
+    <div class=\"glass mt-16\">
+      <label class=\"label\">Your Referral Code</label>
+      <div class=\"row gap-8\">
+        <input type=\"text\" class=\"input\" id=\"codeInput\" readonly data-testid=\"referral-code\"/>
+        <button class=\"icon-btn\" id=\"copyCode\" data-testid=\"copy-code-btn\"><i class=\"fa-solid fa-copy\"></i></button>
+      </div>
+      <label class=\"label mt-12\">Share Link</label>
+      <div class=\"row gap-8\">
+        <input type=\"text\" class=\"input\" id=\"linkInput\" readonly data-testid=\"referral-link\"/>
+        <button class=\"icon-btn\" id=\"copyLink\" data-testid=\"copy-link-btn\"><i class=\"fa-solid fa-link\"></i></button>
+      </div>
+      <button class=\"btn btn-primary mt-12\" id=\"shareBtn\" data-testid=\"share-btn\">
+        <i class=\"fa-solid fa-share-nodes\"></i> &nbsp;Share Now
+      </button>
+    </div>
+
+    <div class=\"stat-grid mt-16\">
+      <div class=\"stat-cell\"><b id=\"refCount\">0</b><span>Referrals</span></div>
+      <div class=\"stat-cell\"><b id=\"refReward\">0</b><span>Earned</span></div>
+      <div class=\"stat-cell\"><b>100</b><span>Per Friend</span></div>
+    </div>
+
+    <div class=\"section-title\"><h3>How It Works</h3></div>
+    <div class=\"glass\">
+      <div class=\"row mb-12 gap-12\"><div class=\"txn-icon\"><i class=\"fa-solid fa-1\"></i></div><div class=\"flex-1\"><b>Share your code</b><div class=\"text-xs muted\">Send to friends via any app</div></div></div>
+      <div class=\"row mb-12 gap-12\"><div class=\"txn-icon\"><i class=\"fa-solid fa-2\"></i></div><div class=\"flex-1\"><b>They sign up</b><div class=\"text-xs muted\">Using your code during registration</div></div></div>
+      <div class=\"row gap-12\"><div class=\"txn-icon\"><i class=\"fa-solid fa-3\"></i></div><div class=\"flex-1\"><b>You earn coins</b><div class=\"text-xs muted\">100 demo coins instantly credited</div></div></div>
+    </div>
+  </div>
+
+  <script type=\"module\">
+    import { requireAuth, getUserData, db, collection, query, where, getDocs } from \"./firebase.js\";
+    import { bottomNav, toast } from \"./script.js\";
+    bottomNav(\"profile\");
+
+    requireAuth(async (user) => {
+      const { user: u } = await getUserData(user.uid);
+      const code = u?.referralCode || \"\";
+      document.getElementById(\"codeInput\").value = code;
+      document.getElementById(\"linkInput\").value = `${location.origin}${location.pathname.replace(/[^/]+$/,'')}register.html?ref=${code}`;
+
+      const q = query(collection(db, \"referrals\"), where(\"referrer\", \"==\", user.uid));
+      const snap = await getDocs(q);
+      document.getElementById(\"refCount\").textContent = snap.size;
+      document.getElementById(\"refReward\").textContent = snap.size * 100;
+    });
+
+    const copy = (id, msg) => {
+      navigator.clipboard.writeText(document.getElementById(id).value).then(()=>toast(msg, \"success\"));
+    };
+    document.getElementById(\"copyCode\").onclick = () => copy(\"codeInput\", \"Code copied!\");
+    document.getElementById(\"copyLink\").onclick = () => copy(\"linkInput\", \"Link copied!\");
+    document.getElementById(\"shareBtn\").onclick = () => {
+      const link = document.getElementById(\"linkInput\").value;
+      if (navigator.share) navigator.share({ title:\"Join Chinna Gaming\", text:\"Join me on Chinna Gaming demo platform!\", url: link });
+      else copy(\"linkInput\", \"Link copied — share with friends!\");
+    };
+  </script>
+</body>
+</html>
+"
