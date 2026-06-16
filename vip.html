@@ -1,0 +1,93 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · VIP</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"app\" data-testid=\"vip-page\">
+    <div class=\"page-head\">
+      <a class=\"back-btn\" href=\"home.html\"><i class=\"fa-solid fa-arrow-left\"></i></a>
+      <h2>VIP Club</h2>
+    </div>
+
+    <div class=\"glass\" style=\"background: linear-gradient(135deg,#fbbf24 0%, #b45309 100%); color:#1f1404;\">
+      <div class=\"row\">
+        <div>
+          <div class=\"text-sm\">Current Tier</div>
+          <h2 id=\"tierName\" style=\"font-size:28px;\">Bronze</h2>
+        </div>
+        <div style=\"font-size:50px;\" id=\"tierGem\">🥉</div>
+      </div>
+      <div class=\"text-xs mt-8\" id=\"xpText\">0 / 500 XP</div>
+      <div class=\"vip-progress\" style=\"background:rgba(0,0,0,.15);\"><div class=\"fill\" id=\"vipFill\" style=\"width:0%\"></div></div>
+      <div class=\"row mt-12\">
+        <span class=\"text-sm\">Daily Bonus</span>
+        <b id=\"dailyBonus\">+50 coins</b>
+      </div>
+      <button class=\"btn btn-primary mt-12\" id=\"claimBtn\" data-testid=\"claim-daily-btn\">Claim Daily Bonus</button>
+    </div>
+
+    <div class=\"section-title\"><h3>All Tiers</h3></div>
+    <div class=\"vip-tier-row\" id=\"tiers\"></div>
+
+    <div class=\"section-title\"><h3>VIP Rewards</h3></div>
+    <div class=\"glass\">
+      <div class=\"row mb-12\"><span><i class=\"fa-solid fa-gift\"></i> Daily login bonus</span><b class=\"text-sm\" style=\"color:var(--green)\">✓ Active</b></div>
+      <div class=\"row mb-12\"><span><i class=\"fa-solid fa-bolt\"></i> Higher payout multipliers</span><b class=\"text-sm muted\">Coming soon</b></div>
+      <div class=\"row mb-12\"><span><i class=\"fa-solid fa-trophy\"></i> Exclusive tournaments</span><b class=\"text-sm muted\">Coming soon</b></div>
+      <div class=\"row\"><span><i class=\"fa-solid fa-headset\"></i> Priority support</span><b class=\"text-sm\" style=\"color:var(--gold)\">Gold+</b></div>
+    </div>
+  </div>
+
+  <script type=\"module\">
+    import {
+      requireAuth, getUserData, VIP_TIERS, getVipTier, db, doc, updateDoc, increment, logTransaction
+    } from \"./firebase.js\";
+    import { bottomNav, fmtCoins, toast } from \"./script.js\";
+    bottomNav(\"vip\");
+
+    const gems = { Bronze: \"🥉\", Silver: \"🥈\", Gold: \"🥇\", Platinum: \"💎\", Diamond: \"💠\" };
+    let user = null;
+
+    requireAuth(async (u) => {
+      user = u;
+      const { wallet } = await getUserData(u.uid);
+      const xp = wallet?.xp || 0;
+      const { tier, next, progress, index } = getVipTier(xp);
+      document.getElementById(\"tierName\").textContent = tier.name;
+      document.getElementById(\"tierGem\").textContent = gems[tier.name];
+      document.getElementById(\"dailyBonus\").textContent = `+${tier.dailyBonus} coins`;
+      document.getElementById(\"xpText\").textContent = next ? `${Math.floor(xp)} / ${next.minXp} XP` : `MAX TIER · ${Math.floor(xp)} XP`;
+      document.getElementById(\"vipFill\").style.width = progress + \"%\";
+
+      const row = document.getElementById(\"tiers\");
+      row.innerHTML = VIP_TIERS.map((t, i) => `
+        <div class=\"tier ${i === index ? 'current' : ''}\">
+          <div class=\"gem\">${gems[t.name]}</div>
+          <h5>${t.name}</h5>
+          <span class=\"text-xs muted\">${t.minXp}+ XP</span>
+          <div class=\"text-xs mt-8\" style=\"color:var(--gold)\">+${t.dailyBonus}/day</div>
+        </div>`).join(\"\");
+    });
+
+    document.getElementById(\"claimBtn\").addEventListener(\"click\", async () => {
+      const today = new Date().toDateString();
+      const last = localStorage.getItem(\"lastClaim_\" + user.uid);
+      if (last === today) return toast(\"Already claimed today, come back tomorrow\", \"info\");
+      const { wallet } = await getUserData(user.uid);
+      const { tier } = getVipTier(wallet?.xp || 0);
+      await updateDoc(doc(db, \"wallets\", user.uid), { bonus: increment(tier.dailyBonus) });
+      await logTransaction(user.uid, \"bonus\", tier.dailyBonus, `${tier.name} daily bonus`);
+      localStorage.setItem(\"lastClaim_\" + user.uid, today);
+      toast(`+${tier.dailyBonus} bonus coins claimed! 🎁`, \"success\");
+    });
+  </script>
+</body>
+</html>
+"
