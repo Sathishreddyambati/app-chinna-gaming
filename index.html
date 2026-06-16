@@ -1,0 +1,64 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\" />
+  <title>Chinna Gaming · Sign In</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"auth-wrap\">
+    <div class=\"auth-logo\" data-testid=\"brand-logo\">CG</div>
+    <h1 class=\"auth-title\" data-testid=\"login-title\">Welcome Back</h1>
+    <p class=\"auth-sub\">Sign in to continue your demo journey</p>
+
+    <form id=\"loginForm\" class=\"glass\" data-testid=\"login-form\">
+      <div class=\"form-group\">
+        <label class=\"label\">Email</label>
+        <input type=\"email\" class=\"input\" id=\"email\" placeholder=\"you@example.com\" required data-testid=\"login-email-input\" />
+      </div>
+      <div class=\"form-group\">
+        <label class=\"label\">Password</label>
+        <input type=\"password\" class=\"input\" id=\"password\" placeholder=\"••••••••\" required data-testid=\"login-password-input\" />
+      </div>
+      <div class=\"row mb-12\">
+        <span></span>
+        <a href=\"forgot-password.html\" class=\"text-sm\" style=\"color:var(--neon)\" data-testid=\"forgot-password-link\">Forgot password?</a>
+      </div>
+      <button type=\"submit\" class=\"btn btn-primary\" data-testid=\"login-submit-btn\">
+        <i class=\"fa-solid fa-right-to-bracket\"></i> &nbsp;Sign In
+      </button>
+    </form>
+
+    <p class=\"auth-foot\">Don't have an account? <a href=\"register.html\" data-testid=\"goto-register-link\">Create one</a></p>
+    <div class=\"demo-note\">
+      <i class=\"fa-solid fa-circle-info\"></i> Demo entertainment platform only. No real money. Virtual coins only.
+    </div>
+  </div>
+
+  <script type=\"module\">
+    import { auth, signInWithEmailAndPassword } from \"./firebase.js\";
+    import { toast } from \"./script.js\";
+
+    document.getElementById(\"loginForm\").addEventListener(\"submit\", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById(\"email\").value.trim();
+      const pwd = document.getElementById(\"password\").value;
+      const btn = e.target.querySelector(\"button\");
+      btn.disabled = true; btn.innerHTML = '<div class=\"loader\" style=\"margin:0; width:20px; height:20px;\"></div>';
+      try {
+        await signInWithEmailAndPassword(auth, email, pwd);
+        toast(\"Welcome back! 🎮\", \"success\");
+        setTimeout(() => window.location.href = \"home.html\", 600);
+      } catch (err) {
+        toast(err.message.replace(\"Firebase: \", \"\"), \"error\");
+        btn.disabled = false; btn.innerHTML = '<i class=\"fa-solid fa-right-to-bracket\"></i> &nbsp;Sign In';
+      }
+    });
+  </script>
+</body>
+</html>
+"
