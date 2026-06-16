@@ -1,0 +1,170 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · Admin Panel</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <!-- Admin Login -->
+  <div class=\"auth-wrap\" id=\"loginPanel\" data-testid=\"admin-login\">
+    <div class=\"auth-logo\" style=\"background:linear-gradient(135deg,#ef4444,#f59e0b)\"><i class=\"fa-solid fa-shield\"></i></div>
+    <h1 class=\"auth-title\">Admin Panel</h1>
+    <p class=\"auth-sub\">Demo · admin@chinnagaming.com / Admin@123</p>
+    <form id=\"adminForm\" class=\"glass\">
+      <div class=\"form-group\">
+        <label class=\"label\">Admin Email</label>
+        <input type=\"email\" class=\"input\" id=\"aemail\" required data-testid=\"admin-email\" />
+      </div>
+      <div class=\"form-group\">
+        <label class=\"label\">Password</label>
+        <input type=\"password\" class=\"input\" id=\"apwd\" required data-testid=\"admin-password\" />
+      </div>
+      <button class=\"btn btn-primary\" type=\"submit\" data-testid=\"admin-login-btn\">
+        <i class=\"fa-solid fa-shield-halved\"></i> &nbsp;Login as Admin
+      </button>
+    </form>
+    <p class=\"auth-foot\"><a href=\"home.html\"><i class=\"fa-solid fa-arrow-left\"></i> Back to App</a></p>
+  </div>
+
+  <!-- Dashboard -->
+  <div class=\"app\" id=\"dash\" style=\"display:none;\" data-testid=\"admin-dashboard\">
+    <div class=\"top-bar\">
+      <div class=\"brand\">
+        <div class=\"brand-logo\" style=\"background:linear-gradient(135deg,#ef4444,#f59e0b)\"><i class=\"fa-solid fa-shield\"></i></div>
+        <div>
+          <div class=\"brand-name\">Admin Panel</div>
+          <div class=\"brand-tag\">Chinna Gaming</div>
+        </div>
+      </div>
+      <button class=\"icon-btn\" id=\"adminLogout\" data-testid=\"admin-logout\"><i class=\"fa-solid fa-right-from-bracket\"></i></button>
+    </div>
+
+    <div class=\"stat-grid mb-16\">
+      <div class=\"stat-cell\"><b id=\"userCount\">0</b><span>Users</span></div>
+      <div class=\"stat-cell\"><b id=\"depCount\">0</b><span>Deposits</span></div>
+      <div class=\"stat-cell\"><b id=\"wdCount\">0</b><span>Withdrawals</span></div>
+    </div>
+
+    <div class=\"filter-row\">
+      <button class=\"chip active\" data-tab=\"users\" data-testid=\"tab-users\">Users</button>
+      <button class=\"chip\" data-tab=\"deposits\" data-testid=\"tab-deposits\">Deposits</button>
+      <button class=\"chip\" data-tab=\"withdrawals\" data-testid=\"tab-withdrawals\">Withdrawals</button>
+      <button class=\"chip\" data-tab=\"games\" data-testid=\"tab-games\">Games</button>
+      <button class=\"chip\" data-tab=\"leaderboard\" data-testid=\"tab-leaderboard\">Leaderboard</button>
+    </div>
+
+    <div class=\"glass\" id=\"tabContent\" data-testid=\"admin-tab-content\"><div class=\"loader\"></div></div>
+  </div>
+
+  <script type=\"module\">
+    import {
+      auth, signInWithEmailAndPassword, signOut, db,
+      collection, getDocs, query, orderBy, limit, doc, updateDoc, ADMIN_EMAIL
+    } from \"./firebase.js\";
+    import { toast, fmtCoins, fmtDate, attachRipples } from \"./script.js\";
+
+    const loginPanel = document.getElementById(\"loginPanel\");
+    const dash = document.getElementById(\"dash\");
+
+    document.getElementById(\"adminForm\").addEventListener(\"submit\", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById(\"aemail\").value.trim();
+      const pwd = document.getElementById(\"apwd\").value;
+      if (email !== ADMIN_EMAIL) return toast(\"Not an admin account\", \"error\");
+      try {
+        await signInWithEmailAndPassword(auth, email, pwd);
+        loginPanel.style.display = \"none\";
+        dash.style.display = \"block\";
+        loadStats(); switchTab(\"users\");
+      } catch (err) { toast(err.message.replace(\"Firebase: \",\"\"), \"error\"); }
+    });
+
+    document.getElementById(\"adminLogout\").addEventListener(\"click\", async () => {
+      await signOut(auth); location.reload();
+    });
+
+    async function loadStats() {
+      const u = await getDocs(collection(db, \"users\"));
+      const d = await getDocs(collection(db, \"deposits\"));
+      const w = await getDocs(collection(db, \"withdrawals\"));
+      document.getElementById(\"userCount\").textContent = u.size;
+      document.getElementById(\"depCount\").textContent = d.size;
+      document.getElementById(\"wdCount\").textContent = w.size;
+    }
+
+    const tabContent = document.getElementById(\"tabContent\");
+
+    async function switchTab(tab) {
+      tabContent.innerHTML = '<div class=\"loader\"></div>';
+      if (tab === \"users\") {
+        const us = await getDocs(collection(db, \"users\"));
+        const rows = await Promise.all(us.docs.map(async u => {
+          const wSnap = await getDocs(query(collection(db,\"wallets\")));
+          const w = wSnap.docs.find(x => x.id === u.id)?.data();
+          return { u: u.data(), w, id: u.id };
+        }));
+        tabContent.innerHTML = `<table class=\"admin-table\"><tr><th>User</th><th>Coins</th><th>Adjust</th></tr>${
+          rows.map(r => `<tr><td><b>${r.u.username||\"-\"}</b><br><span class=\"text-xs muted\">${r.u.email||\"\"}</span></td>
+            <td>${fmtCoins(r.w?.balance||0)}</td>
+            <td>
+              <button class=\"chip\" onclick=\"window.adjust('${r.id}',100)\">+100</button>
+              <button class=\"chip\" onclick=\"window.adjust('${r.id}',-100)\">-100</button>
+            </td></tr>`).join(\"\")
+        }</table>`;
+        window.adjust = async (uid, amt) => {
+          const ref = doc(db,\"wallets\",uid);
+          const wSnap = await getDocs(query(collection(db,\"wallets\")));
+          const cur = wSnap.docs.find(x=>x.id===uid)?.data()?.balance || 0;
+          await updateDoc(ref, { balance: cur + amt });
+          toast(`Adjusted ${amt>0?'+':''}${amt}`, \"success\");
+          switchTab(\"users\");
+        };
+      }
+      else if (tab === \"deposits\") {
+        const s = await getDocs(query(collection(db,\"transactions\"), orderBy(\"createdAt\",\"desc\"), limit(20)));
+        const deps = s.docs.filter(d => d.data().type===\"deposit\");
+        tabContent.innerHTML = `<table class=\"admin-table\"><tr><th>User</th><th>Amount</th><th>Time</th></tr>${
+          deps.map(d => { const x = d.data(); return `<tr><td>${x.uid.substring(0,8)}</td><td><span class=\"tag green\">+${fmtCoins(x.amount)}</span></td><td class=\"text-xs\">${fmtDate(x.createdAt)}</td></tr>`; }).join(\"\") || '<tr><td colspan=\"3\" class=\"muted center\">No deposits</td></tr>'
+        }</table>`;
+      }
+      else if (tab === \"withdrawals\") {
+        const s = await getDocs(query(collection(db,\"withdrawals\"), orderBy(\"createdAt\",\"desc\"), limit(20)));
+        tabContent.innerHTML = `<table class=\"admin-table\"><tr><th>User</th><th>Amount</th><th>Status</th><th>Action</th></tr>${
+          s.docs.map(d => { const x = d.data(); return `<tr><td>${x.uid.substring(0,8)}</td><td>${fmtCoins(x.amount)}</td><td><span class=\"tag ${x.status==='approved'?'green':x.status==='rejected'?'red':'gold'}\">${x.status}</span></td>
+            <td>${x.status==='pending'?`<button class=\"chip\" onclick=\"window.approve('${d.id}')\">✓</button><button class=\"chip\" onclick=\"window.reject('${d.id}')\">✗</button>`:'-'}</td></tr>`; }).join(\"\") || '<tr><td colspan=\"4\" class=\"muted center\">No withdrawals</td></tr>'
+        }</table>`;
+        window.approve = async id => { await updateDoc(doc(db,\"withdrawals\",id),{status:\"approved\"}); toast(\"Approved\",\"success\"); switchTab(\"withdrawals\"); };
+        window.reject = async id => { await updateDoc(doc(db,\"withdrawals\",id),{status:\"rejected\"}); toast(\"Rejected\",\"info\"); switchTab(\"withdrawals\"); };
+      }
+      else if (tab === \"games\") {
+        const s = await getDocs(query(collection(db,\"gameHistory\"), orderBy(\"createdAt\",\"desc\"), limit(20)));
+        tabContent.innerHTML = `<table class=\"admin-table\"><tr><th>Game</th><th>User</th><th>Bet</th><th>Result</th></tr>${
+          s.docs.map(d => { const x=d.data(); return `<tr><td>${x.game}</td><td>${x.uid.substring(0,6)}</td><td>${fmtCoins(x.bet)}</td><td><span class=\"tag ${x.win?'green':'red'}\">${x.win?'WIN':'LOSS'}</span></td></tr>`; }).join(\"\") || '<tr><td colspan=\"4\" class=\"muted center\">No game history</td></tr>'
+        }</table>`;
+      }
+      else if (tab === \"leaderboard\") {
+        const ws = await getDocs(collection(db,\"wallets\"));
+        const us = await getDocs(collection(db,\"users\"));
+        const userMap = {}; us.docs.forEach(u => userMap[u.id]=u.data());
+        const sorted = ws.docs.map(d => ({id:d.id, ...d.data()})).sort((a,b)=>(b.balance||0)-(a.balance||0)).slice(0,10);
+        tabContent.innerHTML = `<table class=\"admin-table\"><tr><th>Rank</th><th>User</th><th>Coins</th></tr>${
+          sorted.map((r,i) => `<tr><td>${[\"🥇\",\"🥈\",\"🥉\"][i] || (i+1)}</td><td>${userMap[r.id]?.username || r.id.substring(0,6)}</td><td><b>${fmtCoins(r.balance)}</b></td></tr>`).join(\"\")
+        }</table>`;
+      }
+      attachRipples(tabContent);
+    }
+
+    document.querySelectorAll(\".chip[data-tab]\").forEach(c => c.addEventListener(\"click\", () => {
+      document.querySelectorAll(\".chip[data-tab]\").forEach(x => x.classList.remove(\"active\"));
+      c.classList.add(\"active\");
+      switchTab(c.dataset.tab);
+    }));
+  </script>
+</body>
+</html>
+"
