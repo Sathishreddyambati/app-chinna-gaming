@@ -1,0 +1,91 @@
+"<!DOCTYPE html>
+<html lang=\"en\">
+<head>
+  <meta charset=\"UTF-8\" />
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+  <title>Chinna Gaming · Pay</title>
+  <link rel=\"stylesheet\" href=\"style.css\" />
+  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+  <link href=\"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
+  <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\" />
+</head>
+<body>
+  <div class=\"app\" data-testid=\"deposit-qr-page\">
+    <div class=\"page-head\">
+      <a class=\"back-btn\" href=\"deposit.html\"><i class=\"fa-solid fa-arrow-left\"></i></a>
+      <h2>Scan QR to Pay</h2>
+    </div>
+
+    <div class=\"glass\" style=\"text-align:center;\">
+      <div class=\"text-sm muted\">You are paying</div>
+      <div class=\"text-lg\" style=\"font-size:32px; margin:6px 0;\" id=\"amtDisplay\">0 coins</div>
+
+      <div class=\"qr-box\" data-testid=\"qr-image\">
+        <img id=\"qr\" alt=\"QR\" />
+      </div>
+
+      <div class=\"qr-info\">
+        <div class=\"text-sm muted\">Demo UPI ID</div>
+        <div class=\"upi\" data-testid=\"upi-id\">chinnagaming@demoupi</div>
+      </div>
+
+      <div class=\"timer mt-16\" data-testid=\"qr-timer\">
+        <i class=\"fa-solid fa-clock\"></i> <span id=\"timer\">04:59</span>
+      </div>
+
+      <div class=\"mt-16\" style=\"display:grid; gap:10px;\">
+        <button class=\"btn btn-success\" id=\"paidBtn\" data-testid=\"i-have-paid-btn\">
+          <i class=\"fa-solid fa-check\"></i> &nbsp;I Have Paid
+        </button>
+        <a href=\"deposit.html\" class=\"btn btn-ghost\">Cancel</a>
+      </div>
+
+      <p class=\"text-xs muted mt-12\">Scan QR to Complete Demo Deposit</p>
+    </div>
+  </div>
+
+  <script type=\"module\">
+    import { requireAuth, addCoins, logTransaction } from \"./firebase.js\";
+    import { bottomNav, toast, fmtCoins } from \"./script.js\";
+    bottomNav(\"wallet\");
+
+    const amount = parseInt(sessionStorage.getItem(\"depositAmt\") || \"0\");
+    if (!amount) location.href = \"deposit.html\";
+
+    document.getElementById(\"amtDisplay\").textContent = fmtCoins(amount) + \" coins\";
+    const upi = `chinnagaming@demoupi?amount=${amount}&note=ChinnaGamingDemo`;
+    document.getElementById(\"qr\").src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(upi)}&bgcolor=ffffff`;
+
+    // countdown
+    let sec = 5*60;
+    const t = setInterval(()=>{
+      sec--;
+      const m = String(Math.floor(sec/60)).padStart(2,\"0\");
+      const s = String(sec%60).padStart(2,\"0\");
+      document.getElementById(\"timer\").textContent = `${m}:${s}`;
+      if (sec<=0) { clearInterval(t); toast(\"QR expired — try again\", \"error\"); setTimeout(()=>location.href=\"deposit.html\", 1500); }
+    },1000);
+
+    requireAuth((user) => {
+      document.getElementById(\"paidBtn\").addEventListener(\"click\", async (e) => {
+        e.target.disabled = true;
+        e.target.innerHTML = '<div class=\"loader\" style=\"margin:0;width:20px;height:20px\"></div>';
+        try {
+          await addCoins(user.uid, \"balance\", amount);
+          await logTransaction(user.uid, \"deposit\", amount, \"Demo Deposit\");
+          // success animation overlay
+          const ov = document.createElement(\"div\");
+          ov.style.cssText = \"position:fixed;inset:0;background:rgba(10,4,24,.95);display:grid;place-items:center;z-index:200;animation:pop .3s ease both;\";
+          ov.innerHTML = `<div style=\"text-align:center\"><div style=\"width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg,#10b981,#34d399);display:grid;place-items:center;margin:0 auto 18px;font-size:60px;animation:pop .5s ease;\"><i class=\"fa-solid fa-check\" style=\"color:#fff\"></i></div>
+          <h2>Deposit Successful</h2><p class=\"muted mt-8\">+ ${fmtCoins(amount)} demo coins credited</p>
+          <button class=\"btn btn-primary mt-16\" onclick=\"location.href='home.html'\" style=\"padding:14px 36px\">Back to Home</button></div>`;
+          document.body.appendChild(ov);
+        } catch (err) {
+          toast(err.message, \"error\");
+        }
+      });
+    });
+  </script>
+</body>
+</html>
+"
